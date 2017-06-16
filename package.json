@@ -8,10 +8,12 @@
     "angular-route": "^1.5.7",
     "angular-sanitize": "^1.5.7",
     "bootstrap": "^3.3.6",
-    "fh-js-sdk": "^2.18.3",
-    "jquery": "^3.1.0",
     "browserify": "^13.0.1",
     "browserify-shim": "^3.8.12",
+    "fh-js-sdk": "^2.18.3",
+    "fh-wfm-mediator": "1.0.0-pre.2",
+    "fh-wfm-sync": "1.0.0-pre.2",
+    "fh-wfm-workorder": "1.0.0-pre.1",
     "grunt": "^0.4.4",
     "grunt-browserify": "^5.0.0",
     "grunt-cli": "^1.2.0",
@@ -20,17 +22,17 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-newer": "~0.5.4",
     "grunt-rev": "~0.1.0",
+    "jquery": "^3.1.0",
     "load-grunt-tasks": "~0.2.0",
+    "lodash": "^4.17.4",
     "time-grunt": "~0.2.1"
   },
-  "devDependencies": {
-
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=0.8.0"
   },
   "scripts": {
-    "install" : "./node_modules/grunt-cli/bin/grunt browserify"
+    "install": "./node_modules/grunt-cli/bin/grunt browserify"
   },
   "license": "mit"
 }

@@ -1,0 +1,48 @@
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <div class="todolist not-done">
+
+        <form name="todoForm" novalidate>
+
+          <label>Title:</label><input name="title" ng-required="true" ng-model="newWorkorder.title" type="text" class="form-control add-todo" placeholder="Title">
+          <span ng-show="todoForm.title.$invalid">The title is required.</span>
+          <br>
+          <label>Description:</label><input name="description" ng-required="true" ng-model="newWorkorder.description" type="text" class="form-control add-todo" placeholder="Description">
+          <span ng-show="todoForm.description.$invalid">The description is required.</span>
+          <br>
+          <button id="addTODO" class="btn btn-success" ng-click="addTodoItem(newWorkorder, todoForm.$valid)">Add TODO</button>
+        </form>
+
+
+        <hr>
+        <ul class="list-group">
+          <li ng-repeat="workorder in newWorkorders" class="list-group-item active">
+            <h4 class="list-group-item-heading">{{workorder.title}}</h4>
+            <h3 class="list-group-item-heading">{{workorder.description}}</h3>
+            <button class="btn btn-success" ng-click="completeTodoItem(workorder)">Done</button>
+          </li>
+        </ul>
+        <div class="todo-footer">
+          <strong><span class="count-todos"></span></strong> Items Left
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="todolist">
+        <h1>Already Done</h1>
+        <ul class="list-group">
+          <li ng-repeat="workorder in completedWorkorders" class="list-group-item active">
+            <h4 class="list-group-item-heading">{{workorder.title}}</h4>
+            <div class="checkbox">
+              <label>
+                <input checked="checked" disabled="disabled" type="checkbox" value="" />{{workorder.description}}</label>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

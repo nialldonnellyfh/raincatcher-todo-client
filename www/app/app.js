@@ -3,20 +3,21 @@ require("angular-route");
 require("angular-sanitize");
 require("angular-resource");
 
+var raincatcherSetup = require('./raincatcherSetup');
+
 var myApp = angular.module('myApp', ['ngRoute',
     'ngSanitize',
-    'myApp.controllers',
-    'myApp.directives',
-    'myApp.services',
-    'myApp.filters',
-    'fhcloud'
-]).constant('$fh', require("fh-js-sdk"));
+  require('./TODO')
+]).constant('$fh', require("fh-js-sdk"))
+  .constant("WFM_PREFIX", "wfm")
+  .constant("WFM_SYNC_PREFIX", "wfm:sync")
+  .constant("WORKORDER_ENTITY_NAME", "workorders")
+  .run(raincatcherSetup);
 
 myApp.config(function($routeProvider) {
 
     $routeProvider
         .when('/', {
-            templateUrl: 'views/example.html',
-            controller: 'MainCtrl'
+            templateUrl: 'views/example.html'
         });
 });
