@@ -90318,48 +90318,106 @@ arguments[4][16][0].apply(exports,arguments)
 },{"dup":16}],55:[function(require,module,exports){
 var CONSTANTS = require('../constants');
 var _ = require('lodash');
+var mediator = require('fh-wfm-mediator/lib/mediator');
+var config = require('../config');
+
+//The topic generator is used to more easily generate topics to use with the mediator
+//See https://github.com/feedhenry-raincatcher/raincatcher-mediator#topics-utilities
+var TopicUtilGenerator = require('fh-wfm-mediator/lib/topics');
 
 var toDoApp = angular.module(CONSTANTS.TODO_COMPONENT);
-var mediator = require('fh-wfm-mediator/lib/mediator');
 
-var Topic = require('fh-wfm-mediator/lib/topics');
+toDoApp.controller('TODOCtrl', function($scope, $timeout) {
 
-toDoApp.controller('TODOCtrl', function($scope, $timeout, WFM_PREFIX, WFM_SYNC_PREFIX, WORKORDER_ENTITY_NAME) {
 
-  var workorderTopic = new Topic(mediator).prefix(WFM_PREFIX).entity(WORKORDER_ENTITY_NAME);
-  var workorderSyncTopic = new Topic(mediator).prefix(WFM_SYNC_PREFIX).entity(WORKORDER_ENTITY_NAME);
+  //Setting up the topic utilities for the workorders module.
+  var workorderTopicUtil = new TopicUtilGenerator(mediator).prefix(CONSTANTS.WFM_PREFIX).entity(config.workordersEntityName);
+
+  //Setting up the topic utilities for the Sync workorders data set.
+  var syncWorkordersTopicUtil = new TopicUtilGenerator(mediator).prefix(CONSTANTS.WFM_SYNC_PREFIX).entity(config.workordersEntityName);
 
   $scope.newWorkorder = {};
 
-  $scope.addTodoItem = function(todoItemToAdd, isValid) {
+  // Here we can set up subscribers for the `done` and `error` topics
+  // from the raincatcher-workorder module.
+  // This is useful for scenarios where business logic is required
+  // when a workorder completes. (e.g. notify a user by SMS etc)
 
+
+  workorderTopicUtil.onDone('create', function(todoItem) {
+    console.log("A TODO item was created", todoItem)
+  });
+
+  workorderTopicUtil.onError('create', function(error) {
+    console.log("An Error Occurred when creating a todo item", error)
+  });
+
+  workorderTopicUtil.onDone('update', function(todoItem) {
+    console.log("A TODO item was updated", todoItem)
+  });
+
+  workorderTopicUtil.onError('update', function(error) {
+    console.log("An Error Occurred when updating a todo item", error)
+  });
+
+  /**
+   *
+   * Adding a new todo item from the UI
+   *
+   * @param todoItemToAdd
+   * @param isValid - passed from the UI form to identify if the form is valid.
+   */
+  $scope.addTodoItem = function(todoItemToAdd, isValid) {
     if (!isValid) {
       return;
     }
+
     $scope.newWorkorder = {};
-    todoItemToAdd.status = "New";
+    todoItemToAdd.status = CONSTANTS.STATUS.NEW;
+
+    //removing any angular internal properties (e.g. $$hash)
     JSON.parse(angular.toJson(todoItemToAdd));
 
-    workorderTopic.publish('create', {workorderToCreate: todoItemToAdd}).then(function(createdToDoItem) {
-      console.log("Created", createdToDoItem);
+    //Publishing the `wfm:workorders:create` topic. This is subscribed to by the raincatcher-workorder module.
+    workorderTopicUtil.publish('create', {workorderToCreate: todoItemToAdd}).then(function(createdToDoItem) {
+      //All of the subscribers for the create topic have completed.
+      console.log("Created a TODO Item", createdToDoItem);
     }).catch(function(err) {
+      //One of the subscribers encountered an error when handling the published topic.
       console.log("There was an error creating the TODO item", err);
     });
   };
 
+  /**
+   *
+   * Marking the todo item as complete.
+   *
+   * This involves setting the updated status and publishing the `wfm:workorders:update` topic
+   *
+   * @param todoItemToComplete
+   */
   $scope.completeTodoItem = function(todoItemToComplete) {
-    todoItemToComplete.status = "Complete";
+    todoItemToComplete.status = CONSTANTS.STATUS.COMPLETE;
     todoItemToComplete = JSON.parse(angular.toJson(todoItemToComplete));
 
-    workorderTopic.publish('update', {workorderToUpdate: todoItemToComplete}).then(function(updatedTodoItem) {
-      console.log("Updated", updatedTodoItem);
+    //Publishing the `wfm:workorders:update` topic. This is subscribed to by the raincatcher-workorder module.
+    workorderTopicUtil.publish('update', {workorderToUpdate: todoItemToComplete}).then(function(updatedTodoItem) {
+      console.log("Updated a TODO Item", updatedTodoItem);
     }).catch(function(err) {
-      console.log("There was an error upadting the TODO item", err);
+      //One of the subscribers encountered an error when handling the published topic.
+      console.log("There was an error updating the TODO item", err);
     });
   };
 
+  /**
+   *
+   * Utility function to load the latest set of todo items and update the UI
+   *
+   * @returns {*}
+   */
   function loadWorkorders() {
-    return workorderTopic.publish("list")
+    //Publishing the `wfm:workorders:list` topic.  This is subscribed to by the raincatcher-workorder module.
+    return workorderTopicUtil.publish("list")
       .then(function(todoItems) {
         todoItems = _.groupBy(todoItems, 'status');
 
@@ -90369,15 +90427,15 @@ toDoApp.controller('TODOCtrl', function($scope, $timeout, WFM_PREFIX, WFM_SYNC_P
         }, 0);
       }).catch(function(err) {
         console.log("There was an error listing TODO items", err);
-      });;
+      });
   }
 
-  workorderSyncTopic.on('record_delta_received', loadWorkorders);
-  workorderSyncTopic.on('local_update_applied', loadWorkorders);
+  syncWorkordersTopicUtil.on('record_delta_received', loadWorkorders);
+  syncWorkordersTopicUtil.on('local_update_applied', loadWorkorders);
 
   loadWorkorders();
 });
-},{"../constants":60,"fh-wfm-mediator/lib/mediator":13,"fh-wfm-mediator/lib/topics":14,"lodash":54}],56:[function(require,module,exports){
+},{"../config":59,"../constants":60,"fh-wfm-mediator/lib/mediator":13,"fh-wfm-mediator/lib/topics":14,"lodash":54}],56:[function(require,module,exports){
 var CONSTANTS = require('../constants');
 var toDoApp = angular.module(CONSTANTS.TODO_COMPONENT);
 
@@ -90412,9 +90470,6 @@ var myApp = angular.module('myApp', ['ngRoute',
     'ngSanitize',
   require('./TODO')
 ]).constant('$fh', require("fh-js-sdk"))
-  .constant("WFM_PREFIX", "wfm")
-  .constant("WFM_SYNC_PREFIX", "wfm:sync")
-  .constant("WORKORDER_ENTITY_NAME", "workorders")
   .run(raincatcherSetup);
 
 myApp.config(function($routeProvider) {
@@ -90429,29 +90484,40 @@ module.exports={
   "syncOptions": {
     "sync_frequency" : 5,
     "do_console_log": false
-  }
+  },
+  "workordersEntityName": "workorders"
 }
 },{}],60:[function(require,module,exports){
 
 module.exports = {
-  TODO_COMPONENT: 'myApp.todo'
+  TODO_COMPONENT: 'myApp.todo',
+  "WFM_PREFIX": "wfm",
+  "WFM_SYNC_PREFIX": "wfm:sync",
+  "STATUS": {
+    "COMPLETE": "Complete",
+    "NEW": "New"
+  }
 };
 },{}],61:[function(require,module,exports){
 var mediator = require('fh-wfm-mediator/lib/mediator');
-var workorderClient = require('fh-wfm-workorder/lib/client');
-var synClient = require('fh-wfm-sync/lib/client');
+var workorderSubscribers = require('fh-wfm-workorder/lib/client');
+var raincatcherSync = require('fh-wfm-sync/lib/client');
 var config = require('./config.json');
 
 module.exports = function setUpRaincatcher($fh) {
-  console.log("** Setting Up Raincatcher Components");
 
-  workorderClient(mediator);
-  //Using the raincatcher
-  synClient.init($fh, config.syncOptions, mediator);
+  //Initialising the workorder module.
+  //The workorder module will now subscribe to the `wfm:workorders` topics
+  workorderSubscribers(mediator);
 
-  return synClient.manage('workorders', config.syncOptions, {}, {}).then(function(manager) {
-    console.log("Starting");
-    return manager.start();
+  //Initialising the raincatcher-sync module
+  raincatcherSync.init($fh, config.syncOptions, mediator);
+
+  //Managing the `workorders` data set.
+  //This sets up the subscribers for the workorders data set (See https://github.com/feedhenry-raincatcher/raincatcher-sync#dataset-topic-subscriptions)
+  return raincatcherSync.manage(config.workordersEntityName, config.syncOptions, {}, {}).then(function(workordersManager) {
+    //The `workorders` data set has been initialised.
+    return workordersManager.start();
   });
 };
 },{"./config.json":59,"fh-wfm-mediator/lib/mediator":13,"fh-wfm-sync/lib/client":18,"fh-wfm-workorder/lib/client":41}]},{},[58]);

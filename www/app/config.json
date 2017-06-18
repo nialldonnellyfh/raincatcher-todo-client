@@ -2,5 +2,6 @@
   "syncOptions": {
     "sync_frequency" : 5,
     "do_console_log": false
-  }
+  },
+  "workordersEntityName": "workorders"
 }

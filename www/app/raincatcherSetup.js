@@ -1,17 +1,21 @@
 var mediator = require('fh-wfm-mediator/lib/mediator');
-var workorderClient = require('fh-wfm-workorder/lib/client');
-var synClient = require('fh-wfm-sync/lib/client');
+var workorderSubscribers = require('fh-wfm-workorder/lib/client');
+var raincatcherSync = require('fh-wfm-sync/lib/client');
 var config = require('./config.json');
 
 module.exports = function setUpRaincatcher($fh) {
-  console.log("** Setting Up Raincatcher Components");
 
-  workorderClient(mediator);
-  //Using the raincatcher
-  synClient.init($fh, config.syncOptions, mediator);
+  //Initialising the workorder module.
+  //The workorder module will now subscribe to the `wfm:workorders` topics
+  workorderSubscribers(mediator);
 
-  return synClient.manage('workorders', config.syncOptions, {}, {}).then(function(manager) {
-    console.log("Starting");
-    return manager.start();
+  //Initialising the raincatcher-sync module
+  raincatcherSync.init($fh, config.syncOptions, mediator);
+
+  //Managing the `workorders` data set.
+  //This sets up the subscribers for the workorders data set (See https://github.com/feedhenry-raincatcher/raincatcher-sync#dataset-topic-subscriptions)
+  return raincatcherSync.manage(config.workordersEntityName, config.syncOptions, {}, {}).then(function(workordersManager) {
+    //The `workorders` data set has been initialised.
+    return workordersManager.start();
   });
 };
